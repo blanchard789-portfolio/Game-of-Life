@@ -20,17 +20,10 @@ use rtt_target::{rprintln, rtt_init_print};
 
 use nanorand::{Pcg64, Rng, SeedableRng};
 
-/*
-enum State {
-    LedOn,
-    LedOff,
-}
-*/
-
 #[entry]
 fn init() -> ! {
     rtt_init_print!();
-    let mut board = Board::take().unwrap();
+    let board = Board::take().unwrap();
     let mut timer = Timer::new(board.TIMER0);
     let mut rng = nanorand::Pcg64::new_seed(1);
     let mut display = Display::new(board.display_pins);
@@ -40,41 +33,44 @@ fn init() -> ! {
 
     let mut game_board: [[u8; 5]; 5] = [[0; 5]; 5];
     random_board(&mut rng, &mut game_board);
-    let mut b_frame_pause = 0;
+    let mut b_pause = 0;
 
     let mut end_game_check = false;
     let mut no_pixel_pause = 0;
 
+    rprintln!("Game of Life Started");
+
     loop {
         if button_a.is_low().unwrap() {
-            rprintln!("a button");
             random_board(&mut rng, &mut game_board);
-        } else if button_b.is_low().unwrap() && b_frame_pause == 0 {
-            rprintln!("b button");
+        } else if button_b.is_low().unwrap() && b_pause == 0 {
             flip_pixels(&mut game_board);
-            b_frame_pause = 5;
-        }
-
-        if b_frame_pause > 0 {
-            b_frame_pause -= 1;
-        }
-
-        if done(&game_board) && !end_game_check {
-            end_game_check = true;
-            no_pixel_pause = 5;
-        } else if done(&game_board) && no_pixel_pause > 0 {
-            no_pixel_pause -= 1;
-        } else if done(&game_board) && no_pixel_pause == 0 {
-            end_game_check = false;
-            no_pixel_pause = 0;
-            random_board(&mut rng, &mut game_board);
+            b_pause = 5;
+        } else if done(&game_board) {
+            if !end_game_check {
+                end_game_check = true;
+                no_pixel_pause = 5;
+            } else if done(&game_board) && no_pixel_pause > 0 {
+                no_pixel_pause -= 1;
+            } else if done(&game_board) && no_pixel_pause == 0 {
+                end_game_check = false;
+                no_pixel_pause = 0;
+                random_board(&mut rng, &mut game_board);
+            }
         } else {
+            life(&mut game_board);
+        }
+
+        if !done(&game_board) && end_game_check {
             end_game_check = false;
             no_pixel_pause = 0;
         }
 
-        life(&mut game_board);
         display.show(&mut timer, game_board, 100);
+
+        if b_pause > 0 {
+            b_pause -= 1;
+        }
     }
 }
 
