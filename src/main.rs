@@ -8,23 +8,23 @@ use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;
 #[rustfmt::skip]
 use microbit::{
-    board::{Board, Buttons},
+    board::Board,
     display::blocking::Display,
     hal::{
-        Rng as HwRng,
         timer::Timer,
     },
 };
 use panic_rtt_target as _;
 use rtt_target::{rprintln, rtt_init_print};
 
-use nanorand::{Pcg64, Rng, SeedableRng};
+use nanorand::{Pcg64, Rng};
 
 #[entry]
 fn init() -> ! {
     rtt_init_print!();
     let board = Board::take().unwrap();
     let mut timer = Timer::new(board.TIMER0);
+    // Need to change later to hardware rng
     let mut rng = nanorand::Pcg64::new_seed(1);
     let mut display = Display::new(board.display_pins);
 
